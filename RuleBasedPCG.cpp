@@ -64,24 +64,78 @@ Map cellularAutomata(const Map& currentMap, int W, int H, int R, double U) {
  * @param agentY Current Y position of the agent (updated by reference).
  * @return The map after the agent's movements and actions.
  */
+
 Map drunkAgent(const Map& currentMap, int W, int H, int J, int I, int roomSizeX, int roomSizeY,
                double probGenerateRoom, double probIncreaseRoom,
                double probChangeDirection, double probIncreaseChange,
                int& agentX, int& agentY) {
     Map newMap = currentMap; // The new map is a copy of the current one
 
-    // TODO: IMPLEMENTATION GOES HERE for the Drunk Agent logic.
-    // The agent should move randomly.
-    // You'll need a random number generator.
-    // Consider:
-    // - How the agent moves (possible steps).
-    // - What it does if it encounters a border or an obstacle (if applicable).
-    // - How it modifies the map (e.g., leaving a trail, creating rooms, etc.).
-    // - Use the provided parameters (J, I, roomSizeX, roomSizeY, probabilities)
-    //   to control its behavior.
+    // Inicialización del generador de números aleatorios
+    std::mt19937 rng(std::chrono::steady_clock::now().time_since_epoch().count());
+    std::uniform_real_distribution<double> chance(0.0, 1.0); // Para decisiones probabilísticas
+    std::uniform_int_distribution<int> dirDist(0, 3); // Para escoger direcciones aleatorias
 
-    return newMap;
+    int dx = 0, dy = 1; // Dirección inicial: hacia la derecha
+
+    for (int j = 0; j < J; ++j) {
+        
+        for (int i = 0; i < I; ++i) {
+            // Marcar la posicion actual del agente en el mapa
+            if (agentX >= 0 && agentX < H && agentY >= 0 && agentY < W)
+                newMap[agentX][agentY] = 1;
+
+            // Calcular nueva posicion
+            int newX = agentX + dx;
+            int newY = agentY + dy;
+
+            // Si la nueva posicion es valida, mover al agente
+            if (newX >= 0 && newX < H && newY >= 0 && newY < W) {
+                agentX = newX;
+                agentY = newY;
+            } else {
+                // Si se choca con el borde del mapa, cambiar dirección aleatoriamente
+                int dir = dirDist(rng);
+                dx = (dir == 0) ? -1 : (dir == 1) ? 1 : 0;
+                dy = (dir == 2) ? -1 : (dir == 3) ? 1 : 0;
+                continue; // Saltar al siguiente paso sin intentar moverse mas
+            }
+
+            // Cambiar direccion con cierta probabilidad
+            if (chance(rng) < probChangeDirection) {
+                int dir = dirDist(rng);
+                dx = (dir == 0) ? -1 : (dir == 1) ? 1 : 0;
+                dy = (dir == 2) ? -1 : (dir == 3) ? 1 : 0;
+                probChangeDirection = 0.2; // Reiniciar probabilidad de cambio
+            } else {
+                probChangeDirection += probIncreaseChange; // Incrementar probabilidad de cambio
+            }
+        }
+
+        // Intentar generar una habitación con cierta probabilidad
+        if (chance(rng) < probGenerateRoom) {
+            int halfX = roomSizeX / 2;
+            int halfY = roomSizeY / 2;
+            // Dibujar una habitación centrada en la posicion del agente
+            for (int dxRoom = -halfX; dxRoom <= halfX; ++dxRoom) {
+                for (int dyRoom = -halfY; dyRoom <= halfY; ++dyRoom) {
+                    int rx = agentX + dxRoom;
+                    int ry = agentY + dyRoom;
+                    // Verificar que este dentro del mapa
+                    if (rx >= 0 && rx < H && ry >= 0 && ry < W) {
+                        newMap[rx][ry] = 1;
+                    }
+                }
+            }
+            probGenerateRoom = 0.1; // Reiniciar probabilidad de generar habitacion
+        } else {
+            probGenerateRoom += probIncreaseRoom; // Incrementar probabilidad
+        }
+    }
+
+    return newMap; // Devolver el nuevo mapa generado
 }
+
 
 int main() {
     std::cout << "--- CELLULAR AUTOMATA AND DRUNK AGENT SIMULATION ---" << std::endl;
