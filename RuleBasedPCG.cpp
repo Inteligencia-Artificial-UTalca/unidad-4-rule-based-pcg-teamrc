@@ -33,15 +33,40 @@ void printMap(const Map& map) {
  * @param U Threshold to decide if the current cell becomes 1 or 0.
  * @return The map after applying the cellular automata rules.
  */
-Map cellularAutomata(const Map& currentMap, int W, int H, int R, double U) {
-    Map newMap = currentMap; // Initially, the new map is a copy of the current one
+Map cellularAutomata(Map currentMap, int W, int H, int R, double U) {
+    // Primera pasada: calcular el nuevo estado y guardarlo en el bit 1
+    for (int i = 0; i < H; ++i) {
+        for (int j = 0; j < W; ++j) {
+            int count = 0;
+            for (int dx = -R; dx <= R; ++dx) {
+                for (int dy = -R; dy <= R; ++dy) {
+                    int ni = i + dx;
+                    int nj = j + dy;
+                    if (ni >= 0 && ni < H && nj >= 0 && nj < W) {
+                        count += currentMap[ni][nj] & 1;  // Leer solo el bit 0 (valor original)
+                    } else {
+                        count += 1; // Bordes se consideran como 1
+                    }
+                }
+            }
 
-    // TODO: IMPLEMENTATION GOES HERE for the cellular automata logic.
-    // Iterate over each cell and apply the transition rules.
-    // Remember that updates should be based on the 'currentMap' state
-    // and applied to the 'newMap' to avoid race conditions within the same iteration.
+            int total = (2 * R + 1) * (2 * R + 1);
+            double ratio = static_cast<double>(count) / total;
+            int newVal = (ratio >= U) ? 1 : 0;
 
-    return newMap;
+            // Guardar el nuevo valor en el bit 1 (sin tocar el valor original en el bit 0)
+            currentMap[i][j] |= (newVal << 1);
+        }
+    }
+
+    // Segunda pasada: actualizar el estado definitivo (bit 1 -> bit 0)
+    for (int i = 0; i < H; ++i) {
+        for (int j = 0; j < W; ++j) {
+            currentMap[i][j] = (currentMap[i][j] >> 1) & 1; // Solo conservar el nuevo valor
+        }
+    }
+
+    return currentMap;
 }
 
 /**
